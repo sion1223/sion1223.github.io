@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#16352f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tracker">
+  <meta name="description" content="iPad와 안드로이드 태블릿에서 사용하는 Tracker 물리 영상 분석 도구">
+  <title>Tracker · 태블릿 실험실</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="tracker_online.png">
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="css/tracker-ios.css">
+  <script src="tracker-files.js" defer></script>
+  <script src="tracker-ios.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">↗</span><div><strong>Tracker</strong><span>물리 영상 분석 · 태블릿 실험실</span></div></div>
+    <div class="header-controls"><select id="view-select" aria-label="분석 화면" data-engine disabled><option value="4">영상</option><option value="0">그래프</option><option value="1">표</option></select><button id="help-button" aria-haspopup="dialog">사용 안내</button></div>
+  </header>
+  <nav class="tools" aria-label="실험 도구">
+    <button id="open-button" class="primary" data-engine disabled>영상·파일 열기</button>
+    <input id="file-input" type="file" accept="video/*,.mp4,.mov,.m4v,.trk,.trz,.zip,.jpg,.jpeg,.png,.gif" hidden>
+    <button data-action="tape" data-engine disabled>길이 보정</button>
+    <button data-action="pointMass" data-engine disabled>질점 추가</button>
+    <button data-action="saveZip" data-engine disabled>프로젝트 저장</button>
+    <button id="results-button" aria-haspopup="dialog">결과 다운로드</button>
+    <p class="tablet-note">영상 열기 → 길이 보정 → 질점 추가<br><br>위쪽 선택 메뉴에서 영상·그래프·표를 전환하세요.<br><br>Google Drive 파일은 영상·파일 열기에서 선택할 수 있습니다.</p>
+  </nav>
+  <main id="workspace" aria-label="Tracker 분석 화면" aria-busy="true">
+    <iframe id="tracker-engine" title="Tracker 영상 분석 엔진" allow="camera; microphone; fullscreen" src="tracker-ios-engine.html"></iframe>
+    <div id="loading" role="status">
+      <div class="loading-card">
+        <span class="eyebrow">VIDEO ANALYSIS LAB</span>
+        <h1>움직임을 데이터로.</h1>
+        <p id="loading-message">Tracker 분석 엔진을 불러오고 있습니다.<br>첫 실행에는 잠시 시간이 걸립니다.</p>
+        <progress aria-label="분석 엔진 불러오는 중"></progress>
+        <button id="retry-button" hidden>다시 시도</button>
+        <a href="desktop.html">기존 Tracker 페이지 열기</a>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <div class="transport" aria-label="프레임 조작">
+      <button id="previous-button" data-engine disabled aria-label="이전 프레임">◀ <span>이전</span></button>
+      <output id="frame-number" aria-label="현재 프레임">—</output>
+      <button id="next-button" data-engine disabled aria-label="다음 프레임"><span>다음</span> ▶</button>
+      <button id="mark-button" data-engine disabled aria-pressed="false">터치로 점 찍기</button>
+    </div>
+    <p id="status" role="status" aria-live="polite">준비 중 · 파일은 이 기기에서 처리됩니다.</p>
+  </footer>
+  <dialog id="help" aria-labelledby="help-title">
+    <div class="dialog-heading"><h2 id="help-title">태블릿에서 실험하기</h2><button id="close-help" aria-label="안내 닫기">닫기</button></div>
+    <ol>
+      <li><strong>영상 열기.</strong> 사진 보관함이나 파일 앱에서 영상을 선택하세요. 「Google Drive에서 선택」에서는 파일 선택기의 Google Drive 위치를 선택하세요. 기존 .trk / .trz 프로젝트도 열 수 있습니다.</li>
+      <li><strong>길이 보정.</strong> 보정 막대의 양 끝을 실제 길이를 아는 물체에 맞추고 길이를 입력하세요. 좌표축 원점과 방향도 맞춰 주세요.</li>
+      <li><strong>질점 추가.</strong> 「터치로 점 찍기」를 켜고 영상 속 물체를 프레임마다 터치하세요. 기존 점은 끌어서 수정할 수 있습니다.</li>
+      <li><strong>결과 확인과 저장.</strong> Tracker의 그래프·표에서 위치와 속도를 확인하고, 「프로젝트 저장」으로 영상과 분석을 .trz 파일로 만드세요. 표 데이터는 Tracker의 내보내기 메뉴를 사용하세요. 생성된 파일은 「결과 다운로드」에서 다운로드하거나 공유할 수 있습니다.</li>
+    </ol>
+    <div class="help-note"><strong>홈 화면에서 앱처럼 열기</strong><p>iPad Safari: 공유 → 「홈 화면에 추가」. Android Chrome: 메뉴 → 「홈 화면에 추가」. 첫 실행과 추가 기능을 불러올 때 인터넷 연결이 필요합니다.</p></div>
+    <p><strong>Google Drive에서 파일 선택:</strong> Drive 앱에 로그인하세요. iPad에서는 파일 앱 → 둘러보기 → 편집에서 Google Drive를 켜세요. Android에서는 파일 선택기 왼쪽 메뉴에서 Drive를 선택하세요. 웹앱에는 Google 계정 로그인이나 Drive 자동 저장 기능이 없습니다.</p>
+    <p>아이폰은 가로 화면을 권장합니다. 영상은 <strong>H.264 MP4</strong>가 가장 호환성이 좋습니다. 카메라 설정 → 포맷 → 「높은 호환성」을 사용하세요. 슬로 모션·가변 프레임 영상은 시간 간격을 확인하고, 정량 분석에는 고정 프레임률 영상을 권장합니다.</p>
+    <p>다른 앱으로 전환하기 전 프로젝트를 저장하세요. 운영체제가 탭을 종료하면 저장하지 않은 분석은 사라질 수 있습니다. 파일 자동 저장과 완전한 오프라인 실행은 지원하지 않습니다.</p>
+    <button id="example-button" data-engine disabled>예제 영상 열기 · 포물선 운동</button>
+    <p>예제는 30 fps 합성 영상입니다. 보정선은 1 m이며, 연직 가속도는 −1.8 m/s²로 설정했습니다.</p>
+    <p class="credits">Open Source Physics Tracker 기반의 비공식 태블릿 웹 버전 · GPL-3.0<br>Douglas Brown · Wolfgang Christian · Robert M. Hanson<br><a href="https://github.com/OpenSourcePhysics/tracker-online">공식 소스</a> · <a href="https://github.com/sion1223/sion1223.github.io/tree/main/tracker">수정 소스</a> · <a href="desktop.html">기존 화면</a></p>
+  </dialog>
+  <dialog id="import-dialog" aria-labelledby="import-title">
+    <div class="dialog-heading"><h2 id="import-title">영상·파일 가져오기</h2><button id="close-import" aria-label="가져오기 닫기">닫기</button></div>
+    <p>분석할 영상이나 기존 Tracker 프로젝트를 선택하세요.</p>
+    <div class="file-actions"><button id="device-open-button" class="primary">기기·사진에서 선택</button><button id="drive-open-button">Google Drive에서 선택</button></div>
+    <p>Drive는 기기의 파일 선택기를 통해 열립니다. iPad는 파일 앱의 둘러보기에서 Google Drive를 활성화하고, Android는 파일 선택기 왼쪽 메뉴에서 Drive를 선택하세요.</p>
+    <p>H.264 MP4 권장 · .trk / .trz 지원 · 파일당 최대 200 MB</p>
+  </dialog>
+  <dialog id="results" aria-labelledby="results-title">
+    <div class="dialog-heading"><h2 id="results-title">파일과 분석 결과</h2><button id="close-results" aria-label="결과 닫기">닫기</button></div>
+    <p>생성된 프로젝트와 표 데이터를 기기에 다운로드하세요. 공유를 지원하는 기기에서는 다른 앱으로 보낼 수도 있습니다.</p>
+    <p id="share-hint"></p>
+    <div id="result-files"></div>
+    <p class="credits">최근 결과 3개와 마지막으로 선택한 원본을 보관합니다. 이 목록은 현재 탭에만 유지됩니다.</p>
+  </dialog>
+</body>
+</html>

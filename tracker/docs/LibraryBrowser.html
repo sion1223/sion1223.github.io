@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Library Browser Online</title><meta charset="utf-8" />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="https://opensourcephysics.github.io/tracker-website/css/library.css"/>
+<script src="compadre.js"></script>
+<script src="swingjs2-tracker-mobile.js"></script>
+<script>
+if (!self.SwingJS)alert('swingjs2.js was not found. It needs to be in swingjs folder in the same directory as ' + document.location.href)
+Info = {
+  code: null,
+  main: "org.opensourcephysics.tools.LibraryBrowser",
+  core: "_tracker",
+  assets: { name: "tracker", zipPath: "tracker-assets.zip", classPaths: ["org/opensourcephysics"] },
+  resourceZip: "misc-assets.zip",
+  width: 850,
+  height: 550,
+  readyFunction: null,
+  j2sPath: 'swingjs/j2s',
+}
+</script>
+
+<script>
+  var libURL = href="https://opensourcephysics.github.io/tracker-online/LibraryBrowser.html?j2sargs=";
+  function openDL(originalUrl){
+    encodedUrl = encodeURIComponent(originalUrl);
+    window.open(libURL+encodedUrl, '_self');
+  }
+</script>
+
+</head>
+<body>
+	<h2 style="text-align:center">Library Browser Online</h2>
+	<div id="DataTool-DataTool-div"
+		style="top:0px; left:0px; margin:0px auto; width:800px; height:562px; position:relative; border:1px blue; border-style:solid;">
+	</div>
+<script>
+SwingJS.getApplet('testApplet', Info)
+</script>
+
+	<p>Library Browser is an application from Open Source Physics (OSP) that enables you to browse and open collections of digital library resources such as EJS models and Tracker experiments. To open a collection choose from the <strong>Collections</strong> menu.</p> 
+    <p>You can also build your own collection using the Java version of Library Browser included with <a href="https://opensourcephysics.github.io/tracker-website/" target="_blank">desktop Tracker</a>. Collections are saved as xml files with references to the actual resources. For more information see 
+          <a href="https://opensourcephysics.github.io/tracker-website/help/library_browser.html" target="_blank">Library Browser Help</a>.</p>
+
+<p>You can reposition Library Browser Online by dragging its title bar and resize it by dragging the lower right hand corner.</p>
+
+<p>Here is a link that opens a test collection in Library Browser Online.</p>
+  <ul>
+    <li><a href="#" onclick="openDL('https://opensourcephysics.github.io/resources/CollectionTest/CollectionTest.xml')">Test collection</a></li>
+</ul>
+<p>Library Browser was written by Douglas Brown at Cabrillo College using portions of the Open Source Physics Java code library developed by Wolfgang Christian at Davidson College. Library Browser was later converted from Java to JavaScript by Douglas Brown, Wolfgang Christian and Robert Hanson using the <a
+			href="https://chemapps.stolaf.edu/swingjs/site/swingjs/examples/about.html" target="_blank">SwingJS </a> system
+developed by Hanson and his students at St. Olaf College. This web page runs the JavaScript conversion.</p></body>
+</html>

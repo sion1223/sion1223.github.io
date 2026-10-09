@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-177639816-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+    
+      gtag('config', 'UA-177639816-1');
+    </script>
+	<title>Tracker Online</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="./css/tracker_home.css" rel="stylesheet" type="text/css">
+	<script src="compadre.js"></script>
+	<script src="swingjs/swingjs2.js"></script>
+	<script>
+		let mainFrame = undefined;
+		if (!self.SwingJS) alert('swingjs2.js was not found. It needs to be in the same directory as ' +
+			document.location.href);
+
+		function initApp() {
+			if (!org.opensourcephysics.cabrillo.tracker.Tracker) {
+				alert("Tracker class not found.");
+				return; //Tracker was not found.
+			}
+			//window.addEventListener('resize', centerApp);
+			//centerApp();
+			setTop();
+			//TrackerCameraImporter.setTrackerReady();
+			//hideLoadingSplash();
+		}
+
+		function hideLoadingSplash() {
+			const splash = document.getElementById("tracker-loading-splash");
+			if (!splash) return;
+			requestAnimationFrame(function() {
+				splash.classList.add("tracker-loading-splash-hidden");
+				window.setTimeout(function() {
+					if (splash.parentNode) splash.parentNode.removeChild(splash);
+				}, 200);
+			});
+		}
+		
+		function setTop() {
+			document.getElementById("pagetext").style.top = "79%";
+		}
+
+		function centerApp() {
+			let xloc = window.innerWidth / 2 - Tracker.app.getMainFrameSize()[0] / 2;
+			Tracker.app.getMainFrame().setLocation$I$I(xloc, 60);
+		}
+
+		function loadExperiment(expURL) {
+			Tracker.app.loadExperimentURL(expURL);
+		}
+
+		TrackerInfo = {
+			code: null,
+			main: "org.opensourcephysics.cabrillo.tracker.Tracker",
+			core: "_tracker",
+			resourceZip: "misc-assets.zip",
+			assets: { name: "tracker", zipPath: "tracker-assets.zip", classPaths: ["org/opensourcephysics"] },
+			//width: 850,
+			//height: 550,
+			args: ["-adaptive"],
+			readyFunction: initApp,
+			j2sPath: 'swingjs/j2s',
+			console: 'none'
+		}
+	</script>
+</head>
+
+<body writingsuggestions="false">
+	<div id="tracker-online-splash" role="status" aria-live="polite"
+		style="position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background:white;color:#222;text-align:center;font:20px/1.5 Arial,sans-serif;padding:24px;box-sizing:border-box;pointer-events:none;">
+		<img src="./splash_logo.png" alt="" width="508" height="254"
+			style="display:block;width:508px;height:auto;flex-shrink:0;max-width:80%;max-height:50vh;object-fit:contain;margin:0 auto 24px;"
+			onerror="this.onerror=null;this.src='splash_logo.png';" />
+		<div>Loading Tracker Online</div>
+		<div>Please wait.</div>
+	</div>
+	<p align="center"><img src="tracker_online_logo.png" alt="Tracker Online icon"></p>		
+
+	<script>
+		SwingJS.getApplet('Tracker', TrackerInfo);
+	</script>
+
+	<div id = "pagetext" style="position:absolute;left:10px;top:820px;">
+	<p><strong>Using Tracker Online:</strong> To maximize Tracker, click the blue up-facing triangle at the right end of the toolbar. 
+		To open a Tracker project (TRZ), Tracker tab (TRK), or video file:</p>
+		<ul>
+		  <li>Drag and drop the file from your desktop onto Tracker Online.</li>
+		  <li>Or download or copy the file to your desktop, choose File|Open File and select the file.</li>
+		  <li>Or choose File|Open Library Browser, choose a collection from the Collections menu, browse to a resource of interest
+		 and double-click the resource.</li>
+	  </ul>
+		
+	<p><strong>Supported Videos:</strong> Tracker Online can open the following types of videos:</p>
+		<ul>
+ 		  <li>Image stacks consisting of JPEG or PNG images numbered sequentially (e.g. car00.jpg, car01.jpg, car02.jpg, ...). Image stacks may be in a ZIP file.</li>
+		  <li>Video types supported by HTML5, such as MP4 with H264 codec.</li>
+		  <li>Videos captured directly from your camera. To capture a video, choose Video|Capture.</li>
+		</ul>
+	<p>For unsupported videos we recommend converting them to mp4 using the open source application <a href="https://handbrake.fr/" target="_blank">HandBrake</a>, available for Windows, Linux and MacOS platforms. Choose the default "Fast 1080p30" preset, then in the Video tab choose "Constant Framerate". If you prefer, you can use a web-based converter such as <a href="https://cloudconvert.com/mp4-converter" target="_blank">Cloud Convert.</a>  To create image stacks we recomment <a href="https://www.onlineconverter.com/" target="_blank">Online Converter</a>.</p>
+		
+	<p><strong>Tracker Projects with Unsupported Videos:</strong> A Tracker Project is a ZIP file with extension TRZ that contains video files, Tracker tab files (TRK), and documentation files (HTML, PDF).
+	Some Tracker Projects may contain unsupported videos such as MOV or AVI. These can be opened in Tracker Online but they will not display the video. To fix this, you can unzip the TRZ file, find the video and convert it to a supported format as described above, then copy it to your desktop and import it back into the tab using Video|Import.</p>
+
+    <p><strong>Bug Reporting:</strong> Use the <a href="https://forms.gle/uSA2Q8Ev3bMGFK596">Tracker Online Bug Report</a> form to report bugs you discover in Tracker Online.  Use the <a href="https://www.compadre.org/osp/bulletinboard/ForumDetails.cfm?FID=57">OSP Tracker Discussion</a> forum for all other Tracker related questions or feedback. We welcome questions about how to use Tracker, suggestions for additional Tracker features, and bug reports related to the desktop or online version of Tracker.</p>
+    
+	<p><strong>Credits:</strong> Tracker was written in Java by Douglas Brown at Cabrillo College using portions of the the Open Source
+		Physics code library developed by Wolfgang Christian at Davidson College. Tracker was optimized and converted from
+		Java to JavaScript by Robert M Hanson, Douglas Brown and Wolfgang Christian using the <a
+			href="https://chemapps.stolaf.edu/swingjs/site/swingjs/examples/about.html">SwingJS </a> system
+		developed by Hanson and his students at St. Olaf College.
+	</p>
+	</div>
+</body>
+
+</html>

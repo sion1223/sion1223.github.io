@@ -1,0 +1,20 @@
+{
+  "name": "tracker-online",
+  "version": "1.0.0",
+  "description": "Korean Tracker video analysis for iPad and Android tablets",
+  "scripts": {
+    "start": "python3 -m http.server 8000 --bind 0.0.0.0 --directory docs",
+    "test": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sion1223/sion1223.github.io.git",
+    "directory": "tracker"
+  },
+  "license": "GPL-3.0-only",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.64.0"
+  },
+  "private": true
+}
