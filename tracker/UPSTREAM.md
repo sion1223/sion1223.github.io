@@ -7,3 +7,5 @@ Retrieved on 2026-10-09.
 - tracker: [6dd50728f7e7c75258b248eda35108392cac30e2](https://github.com/OpenSourcePhysics/tracker/commit/6dd50728f7e7c75258b248eda35108392cac30e2)
 
 - osp: [37b7072414f290d2ab2dd1a38ee8e96939d27d68](https://github.com/OpenSourcePhysics/osp/commit/37b7072414f290d2ab2dd1a38ee8e96939d27d68)
+
+- Example videos `docs/examples/BallDrop.mp4`, `docs/examples/BallTossOut.mp4`: unchanged from [mechanics_videos.zip](https://opensourcephysics.github.io/tracker-website/download/mechanics_videos.zip) on the official Tracker website (retrieved 2026-10-12).

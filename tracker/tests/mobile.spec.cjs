@@ -8,12 +8,21 @@ async function boot(page) {
   await page.goto('/TrackerMobile.html');
   await expect(page.locator('#loading')).toBeHidden();
   const engine = page.frames().find(frame => frame.url().includes('tracker-ios-engine.html'));
-  await engine.getByText('아니요', { exact: true }).tap();
+  // The shell answers Tracker's start-up keyboard question for touch use.
+  await expect(engine.getByText('키보드를 연결해서 사용하고 있나요?')).toBeHidden();
   await expect(engine.getByText('파일', { exact: true }).first()).toBeVisible();
   return { engine, errors };
 }
 
-test('video import, touch tracking, frame controls and view selection use the real engine', async ({ page }) => {
+// Tracker loads videos through blob: URLs, which the Windows WebKit port used
+// by Playwright cannot decode (it plays the same file over HTTP). Safari can.
+function skipWithoutBlobVideo(testInfo) {
+  test.skip(testInfo.project.use.browserName === 'webkit' && process.platform === 'win32',
+    'Playwright WebKit on Windows cannot play blob: video URLs');
+}
+
+test('video import, touch tracking, frame controls and view selection use the real engine', async ({ page }, testInfo) => {
+  skipWithoutBlobVideo(testInfo);
   const { engine, errors } = await boot(page);
   await expect(page.locator('#next-button')).toBeDisabled();
   await page.locator('#file-input').setInputFiles(path.join(__dirname, '../docs/examples/projectile.mp4'));
@@ -97,6 +106,7 @@ test('file import offers the device Drive provider without account integration',
 
 test('a downloaded project includes the video and preserves a measured point on reopen', async ({ page }, testInfo) => {
   test.skip(!['webkit-ipad', 'android-tablet'].includes(testInfo.project.name), 'Tablet round-trip coverage');
+  skipWithoutBlobVideo(testInfo);
   const { engine, errors } = await boot(page);
   page.on('dialog', dialog => dialog.accept('tablet-roundtrip'));
   await page.locator('#file-input').setInputFiles(path.join(__dirname, '../docs/examples/projectile.mp4'));

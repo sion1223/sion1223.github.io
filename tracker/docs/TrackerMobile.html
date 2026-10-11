@@ -24,14 +24,17 @@
   <nav class="tools" aria-label="실험 도구">
     <button id="open-button" class="primary" data-engine disabled>영상·파일 열기</button>
     <input id="file-input" type="file" accept="video/*,.mp4,.mov,.m4v,.trk,.trz,.zip,.jpg,.jpeg,.png,.gif" hidden>
-    <button data-action="tape" data-engine disabled>길이 보정</button>
-    <button data-action="pointMass" data-engine disabled>질점 추가</button>
+    <button id="calibrate-button" data-engine disabled><span class="step-no" aria-hidden="true">1</span><span class="tool-label">길이 보정<small id="scale-readout">미보정</small></span></button>
+    <button id="origin-button" data-engine disabled><span class="step-no" aria-hidden="true">2</span>원점 설정</button>
+    <button data-action="pointMass" data-engine disabled><span class="step-no" aria-hidden="true">3</span>질점 추가</button>
+    <button id="analysis-button" data-engine disabled aria-haspopup="dialog"><span class="step-no" aria-hidden="true">4</span>결과 분석</button>
     <button data-action="saveZip" data-engine disabled>프로젝트 저장</button>
     <button id="results-button" aria-haspopup="dialog">결과 다운로드</button>
-    <p class="tablet-note">영상 열기 → 길이 보정 → 질점 추가<br><br>위쪽 선택 메뉴에서 영상·그래프·표를 전환하세요.<br><br>Google Drive 파일은 영상·파일 열기에서 선택할 수 있습니다.</p>
+    <p class="tablet-note">① 길이를 아는 물체의 양 끝을 터치해 보정<br>② 원점 위치를 터치<br>③ 질점을 추가하고 프레임마다 물체를 터치<br>④ 결과 분석에서 가속도·표·CSV 확인<br><br>Google Drive 파일은 영상·파일 열기에서 선택할 수 있습니다.</p>
   </nav>
   <main id="workspace" aria-label="Tracker 분석 화면" aria-busy="true">
     <iframe id="tracker-engine" title="Tracker 영상 분석 엔진" allow="camera; microphone; fullscreen" src="tracker-ios-engine.html"></iframe>
+    <div id="tap-banner" role="status" hidden><span id="tap-message"></span><button id="tap-cancel">취소</button></div>
     <div id="loading" role="status">
       <div class="loading-card">
         <span class="eyebrow">VIDEO ANALYSIS LAB</span>
@@ -48,6 +51,13 @@
       <button id="previous-button" data-engine disabled aria-label="이전 프레임">◀ <span>이전</span></button>
       <output id="frame-number" aria-label="현재 프레임">—</output>
       <button id="next-button" data-engine disabled aria-label="다음 프레임"><span>다음</span> ▶</button>
+      <span class="transport-group" aria-label="화면 배율">
+        <button id="zoom-out-button" data-engine disabled aria-label="축소">－</button>
+        <button id="zoom-fit-button" data-engine disabled aria-label="화면에 맞춤"><span id="zoom-readout">맞춤</span></button>
+        <button id="zoom-in-button" data-engine disabled aria-label="확대">＋</button>
+      </span>
+      <button id="axes-button" data-engine disabled aria-pressed="false">축</button>
+      <button id="undo-button" data-engine disabled aria-label="마지막 점 지우기">↶ <span>점 지우기</span></button>
       <button id="mark-button" data-engine disabled aria-pressed="false">터치로 점 찍기</button>
     </div>
     <p id="status" role="status" aria-live="polite">준비 중 · 파일은 이 기기에서 처리됩니다.</p>
@@ -56,16 +66,17 @@
     <div class="dialog-heading"><h2 id="help-title">태블릿에서 실험하기</h2><button id="close-help" aria-label="안내 닫기">닫기</button></div>
     <ol>
       <li><strong>영상 열기.</strong> 사진 보관함이나 파일 앱에서 영상을 선택하세요. 「Google Drive에서 선택」에서는 파일 선택기의 Google Drive 위치를 선택하세요. 기존 .trk / .trz 프로젝트도 열 수 있습니다.</li>
-      <li><strong>길이 보정.</strong> 보정 막대의 양 끝을 실제 길이를 아는 물체에 맞추고 길이를 입력하세요. 좌표축 원점과 방향도 맞춰 주세요.</li>
-      <li><strong>질점 추가.</strong> 「터치로 점 찍기」를 켜고 영상 속 물체를 프레임마다 터치하세요. 기존 점은 끌어서 수정할 수 있습니다.</li>
-      <li><strong>결과 확인과 저장.</strong> Tracker의 그래프·표에서 위치와 속도를 확인하고, 「프로젝트 저장」으로 영상과 분석을 .trz 파일로 만드세요. 표 데이터는 Tracker의 내보내기 메뉴를 사용하세요. 생성된 파일은 「결과 다운로드」에서 다운로드하거나 공유할 수 있습니다.</li>
+      <li><strong>① 길이 보정.</strong> 「길이 보정」을 누르고 영상 속 길이를 아는 물체(자, 막대)의 한쪽 끝과 반대쪽 끝을 차례로 터치한 뒤 실제 길이를 입력하세요. 정확히 맞추려면 아래 ＋ 버튼으로 확대하세요.</li>
+      <li><strong>② 원점 설정.</strong> 「원점 설정」을 누르고 기준점(예: 공이 놓인 위치)을 터치하세요. 「축」 버튼으로 좌표축을 보이거나 숨깁니다. y축은 위쪽이 +입니다.</li>
+      <li><strong>③ 질점 추가.</strong> 「질점 추가」 후 영상 속 물체를 터치하면 점이 찍히고 다음 프레임으로 넘어갑니다. 잘못 찍으면 「점 지우기」로 마지막 점부터 지웁니다. 확대 중에는 화면이 물체를 따라갑니다.</li>
+      <li><strong>④ 결과 분석과 저장.</strong> 「결과 분석」에서 측정값 표, 그래프, 2차 함수 맞춤으로 구한 가속도를 확인하고 CSV로 저장하세요. 「프로젝트 저장」은 영상과 분석을 .trz 파일로 묶습니다. 생성된 파일은 「결과 다운로드」에서 받을 수 있습니다.</li>
     </ol>
     <div class="help-note"><strong>홈 화면에서 앱처럼 열기</strong><p>iPad Safari: 공유 → 「홈 화면에 추가」. Android Chrome: 메뉴 → 「홈 화면에 추가」. 첫 실행과 추가 기능을 불러올 때 인터넷 연결이 필요합니다.</p></div>
     <p><strong>Google Drive에서 파일 선택:</strong> Drive 앱에 로그인하세요. iPad에서는 파일 앱 → 둘러보기 → 편집에서 Google Drive를 켜세요. Android에서는 파일 선택기 왼쪽 메뉴에서 Drive를 선택하세요. 웹앱에는 Google 계정 로그인이나 Drive 자동 저장 기능이 없습니다.</p>
     <p>아이폰은 가로 화면을 권장합니다. 영상은 <strong>H.264 MP4</strong>가 가장 호환성이 좋습니다. 카메라 설정 → 포맷 → 「높은 호환성」을 사용하세요. 슬로 모션·가변 프레임 영상은 시간 간격을 확인하고, 정량 분석에는 고정 프레임률 영상을 권장합니다.</p>
     <p>다른 앱으로 전환하기 전 프로젝트를 저장하세요. 운영체제가 탭을 종료하면 저장하지 않은 분석은 사라질 수 있습니다. 파일 자동 저장과 완전한 오프라인 실행은 지원하지 않습니다.</p>
-    <button id="example-button" data-engine disabled>예제 영상 열기 · 포물선 운동</button>
-    <p>예제는 30 fps 합성 영상입니다. 보정선은 1 m이며, 연직 가속도는 −1.8 m/s²로 설정했습니다.</p>
+    <div class="file-actions"><button id="example-drop-button" data-example="BallDrop.mp4" data-engine disabled>예제 · 자유 낙하 (실제 촬영)</button><button id="example-button" data-example="projectile.mp4" data-engine disabled>예제 · 포물선 (합성)</button></div>
+    <p>자유 낙하 예제는 공식 Tracker 예제 영상(30 fps)입니다. 공 옆 막대의 밝은 칸 10개를 1 m(칸당 10 cm)로 보고 보정한 뒤, 손을 떠난 뒤의 프레임(11번 무렵부터)을 찍으면 g ≈ 9.8 m/s²가 나옵니다. 영상이 비월 주사 방식이라 공이 두 개로 겹쳐 보이면 두 상의 가운데를 터치하세요. 합성 예제는 보정선 1 m, 연직 가속도 −1.8 m/s²입니다.</p>
     <p class="credits">Open Source Physics Tracker 기반의 비공식 태블릿 웹 버전 · GPL-3.0<br>Douglas Brown · Wolfgang Christian · Robert M. Hanson<br><a href="https://github.com/OpenSourcePhysics/tracker-online">공식 소스</a> · <a href="https://github.com/sion1223/sion1223.github.io/tree/main/tracker">수정 소스</a> · <a href="desktop.html">기존 화면</a></p>
   </dialog>
   <dialog id="import-dialog" aria-labelledby="import-title">
@@ -81,6 +92,31 @@
     <p id="share-hint"></p>
     <div id="result-files"></div>
     <p class="credits">최근 결과 3개와 마지막으로 선택한 원본을 보관합니다. 이 목록은 현재 탭에만 유지됩니다.</p>
+  </dialog>
+  <dialog id="calibration-dialog" aria-labelledby="calibration-title">
+    <form id="calibration-form" method="dialog">
+      <div class="dialog-heading"><h2 id="calibration-title">실제 길이 입력</h2></div>
+      <p>방금 터치한 두 점 사이의 실제 길이를 입력하세요. 예: 1 m 자 → 1 m, 30 cm 자 → 30 cm.</p>
+      <div class="length-input">
+        <input id="calibration-length" type="number" inputmode="decimal" min="0" step="any" required aria-label="실제 길이" placeholder="예: 1">
+        <select id="calibration-unit" aria-label="길이 단위"><option value="m">m</option><option value="cm">cm</option><option value="mm">mm</option></select>
+      </div>
+      <p id="calibration-error" class="form-error" role="alert"></p>
+      <div class="file-actions"><button id="calibration-apply" class="primary" value="apply">보정 적용</button><button id="calibration-redo" type="button">다시 터치하기</button></div>
+    </form>
+  </dialog>
+  <dialog id="analysis" aria-labelledby="analysis-title">
+    <div class="dialog-heading"><h2 id="analysis-title">결과 분석</h2><button id="close-analysis" aria-label="분석 닫기">닫기</button></div>
+    <div class="analysis-controls">
+      <label>트랙 <select id="analysis-track" aria-label="분석할 트랙"></select></label>
+      <label>그래프 <select id="analysis-variable" aria-label="그래프 세로축"><option value="y">y – t</option><option value="x">x – t</option><option value="vy">v<sub>y</sub> – t</option><option value="vx">v<sub>x</sub> – t</option></select></label>
+    </div>
+    <p id="analysis-warning" class="form-error"></p>
+    <div id="analysis-summary" class="summary-grid"></div>
+    <svg id="analysis-chart" role="img" aria-label="시간에 따른 위치 그래프" viewBox="0 0 560 260" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="table-wrap"><table id="analysis-table"><thead><tr><th>프레임</th><th>t (s)</th><th>x</th><th>y</th><th>v<sub>x</sub></th><th>v<sub>y</sub></th><th>a<sub>y</sub></th></tr></thead><tbody></tbody></table></div>
+    <div class="file-actions"><button id="csv-button" class="primary">CSV로 저장</button></div>
+    <p class="credits">위치·속도·가속도는 Tracker 엔진이 계산한 값입니다. 2차 함수 맞춤(최소제곱)으로 구한 가속도는 측정점 전체를 사용하므로 개별 가속도 값보다 잡음이 적습니다.</p>
   </dialog>
 </body>
 </html>

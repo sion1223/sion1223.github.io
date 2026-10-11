@@ -72,16 +72,19 @@
     }
   }
   function open() { render(); if (!$('results').open) $('results').showModal(); }
+  function addResult(file) {
+    results = [file, ...results].slice(0, 3);
+    announce('결과 파일을 만들었습니다. 다운로드하거나 다른 앱에 공유하세요.');
+    open();
+  }
   window.TrackerFiles = {
     rememberSource(file) { source = file; },
+    addResult,
     open
   };
   addEventListener('tracker-export', event => {
     const { name, data } = event.detail;
-    const file = new File([data], name.split(/[\\/]/).pop() || 'tracker-result.trz', { type: mime(name) });
-    results = [file, ...results].slice(0, 3);
-    announce('결과 파일을 만들었습니다. 다운로드하거나 다른 앱에 공유하세요.');
-    open();
+    addResult(new File([data], name.split(/[\\/]/).pop() || 'tracker-result.trz', { type: mime(name) }));
   });
   $('results-button').addEventListener('click', open);
   $('close-results').addEventListener('click', () => $('results').close());
