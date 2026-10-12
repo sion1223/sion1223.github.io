@@ -73,7 +73,7 @@
     </ol>
     <div class="help-note"><strong>홈 화면에서 앱처럼 열기</strong><p>iPad Safari: 공유 → 「홈 화면에 추가」. Android Chrome: 메뉴 → 「홈 화면에 추가」. 첫 실행과 추가 기능을 불러올 때 인터넷 연결이 필요합니다.</p></div>
     <p><strong>Google Drive에서 파일 선택:</strong> Drive 앱에 로그인하세요. iPad에서는 파일 앱 → 둘러보기 → 편집에서 Google Drive를 켜세요. Android에서는 파일 선택기 왼쪽 메뉴에서 Drive를 선택하세요. 웹앱에는 Google 계정 로그인이나 Drive 자동 저장 기능이 없습니다.</p>
-    <p>아이폰은 가로 화면을 권장합니다. 영상은 <strong>H.264 MP4</strong>가 가장 호환성이 좋습니다. 카메라 설정 → 포맷 → 「높은 호환성」을 사용하세요. 슬로 모션·가변 프레임 영상은 시간 간격을 확인하고, 정량 분석에는 고정 프레임률 영상을 권장합니다.</p>
+    <p>아이폰은 가로 화면을 권장합니다. 영상은 <strong>H.264 MP4</strong>가 가장 호환성이 좋습니다. iPhone은 카메라 설정 → 포맷 → 「높은 호환성」, 갤럭시는 카메라 설정 → 고급 동영상 옵션에서 「고효율 동영상」을 끄면 됩니다. 기기가 바로 열 수 없는 코덱(HEVC 등)은 이 기기 안에서 H.264로 자동 변환합니다. 변환 도구는 처음 한 번 인터넷으로 받으며(약 30MB), 긴 영상일수록 시간이 오래 걸립니다. 슬로 모션·가변 프레임 영상은 시간 간격을 확인하고, 정량 분석에는 고정 프레임률 영상을 권장합니다.</p>
     <p>다른 앱으로 전환하기 전 프로젝트를 저장하세요. 운영체제가 탭을 종료하면 저장하지 않은 분석은 사라질 수 있습니다. 파일 자동 저장과 완전한 오프라인 실행은 지원하지 않습니다.</p>
     <div class="file-actions"><button id="example-drop-button" data-example="BallDrop.mp4" data-engine disabled>예제 · 자유 낙하 (실제 촬영)</button><button id="example-button" data-example="projectile.mp4" data-engine disabled>예제 · 포물선 (합성)</button></div>
     <p>자유 낙하 예제는 공식 Tracker 예제 영상(30 fps)입니다. 공 옆 막대의 밝은 칸 10개를 1 m(칸당 10 cm)로 보고 보정한 뒤, 손을 떠난 뒤의 프레임(11번 무렵부터)을 찍으면 g ≈ 9.8 m/s²가 나옵니다. 영상이 비월 주사 방식이라 공이 두 개로 겹쳐 보이면 두 상의 가운데를 터치하세요. 합성 예제는 보정선 1 m, 연직 가속도 −1.8 m/s²입니다.</p>
@@ -84,7 +84,7 @@
     <p>분석할 영상이나 기존 Tracker 프로젝트를 선택하세요.</p>
     <div class="file-actions"><button id="device-open-button" class="primary">기기·사진에서 선택</button><button id="drive-open-button">Google Drive에서 선택</button></div>
     <p>Drive는 기기의 파일 선택기를 통해 열립니다. iPad는 파일 앱의 둘러보기에서 Google Drive를 활성화하고, Android는 파일 선택기 왼쪽 메뉴에서 Drive를 선택하세요.</p>
-    <p>H.264 MP4 권장 · .trk / .trz 지원 · 파일당 최대 200 MB</p>
+    <p>H.264 MP4 권장 · HEVC 등 다른 코덱은 기기에서 열 수 없으면 자동으로 변환 · .trk / .trz 지원 · 파일당 최대 200 MB</p>
   </dialog>
   <dialog id="results" aria-labelledby="results-title">
     <div class="dialog-heading"><h2 id="results-title">파일과 분석 결과</h2><button id="close-results" aria-label="결과 닫기">닫기</button></div>

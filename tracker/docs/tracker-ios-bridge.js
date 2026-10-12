@@ -240,8 +240,10 @@
       element.muted = true;
       element.playsInline = true;
       element.setAttribute('webkit-playsinline', '');
-      element.addEventListener('error', () => notify('tracker-media-error',
-        '영상을 열지 못했습니다. 이 브라우저가 지원하지 않는 형식일 수 있습니다. H.264 MP4로 변환해 다시 열어 주세요.'));
+      element.addEventListener('error', () => {
+        mediaErrorAt = Date.now();
+        notify('tracker-media-error', '영상을 열지 못했습니다. 이 브라우저가 지원하지 않는 형식일 수 있습니다. H.264 MP4로 변환해 다시 열어 주세요.');
+      });
       let ready = false;
       element.addEventListener('canplaythrough', () => { ready = true; });
       element.addEventListener('loadeddata', () => setTimeout(() => {
@@ -250,6 +252,98 @@
     }
     return element;
   };
+  let mediaErrorAt = 0;
+  // Virtual folders of imported videos this browser has decoded. Tracker's web
+  // build rejects every MP4/MOV whose codec is not H.264 ("avc1") by name, but
+  // it reads frames through <video>, so any codec the browser plays works
+  // (HEVC from Android cameras and iPhones on most tablets).
+  const decodableFolders = new Set();
+  function installCodecCheck() {
+    const io = Clazz.load('org.opensourcephysics.media.core.VideoIO');
+    const method = 'checkMP4$S$org_opensourcephysics_tools_LibraryBrowser$org_opensourcephysics_media_core_VideoPanel';
+    const original = io[method];
+    io[method] = function (path, ...rest) {
+      const value = String(path);
+      for (const folder of decodableFolders) if (value.includes(folder)) return true;
+      return original.call(this, path, ...rest);
+    };
+  }
+  function browserDecodes(blob) {
+    // Decode the first frame in a throwaway element. canPlayType cannot see a
+    // file's profile or bit depth (10-bit HDR HEVC often fails), so test it.
+    return new Promise(resolve => {
+      const video = createElement.call(document, 'video');
+      const url = URL.createObjectURL(blob);
+      let timer;
+      const done = ok => {
+        clearTimeout(timer);
+        video.removeAttribute('src');
+        video.load(); // Release the decoder; tablets have only a few.
+        URL.revokeObjectURL(url);
+        resolve(ok);
+      };
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'auto';
+      video.addEventListener('error', () => done(false));
+      // Audio-only playback of an undecodable video track reports width 0.
+      video.addEventListener('loadeddata', () => done(video.videoWidth > 0));
+      timer = setTimeout(() => done(video.readyState >= 2 && video.videoWidth > 0), 10000);
+      video.src = url;
+      video.load();
+    });
+  }
+  async function readBytes(blob) {
+    try { return await blob.arrayBuffer(); } catch {
+      // Android reports NotReadableError for cloud files that are not downloaded yet.
+      throw new BridgeError('파일을 읽지 못했습니다. Drive 파일이면 기기에 다운로드한 뒤 다시 선택해 주세요.');
+    }
+  }
+  function openInTracker(bytes, name, trustCodec) {
+    app(); // Callers cross asynchronous boundaries.
+    // Use the same virtual file storage as SwingJS's native file chooser.
+    const folder = 'OPEN/' + Date.now() + '/';
+    if (trustCodec) decodableFolders.add(folder);
+    const javaFile = Clazz.new_(Clazz.load('java.io.File').c$$S, [J2S.getGlobal('j2s.tmpdir') + folder + name]);
+    // Wrap the buffer as a Java byte[] instead of J2S._toBytes, which copies
+    // byte by byte; large tablet videos otherwise stall or run out of memory.
+    swingjs.JSUtil.setFileBytesStatic$O$O(javaFile, Clazz.array(new Int8Array(bytes), Clazz.array(Byte.TYPE, 0)));
+    const paths = Clazz.new_(Clazz.load('java.util.ArrayList'));
+    paths.add$O(javaFile.getAbsolutePath$());
+    const io = Clazz.load('org.opensourcephysics.cabrillo.tracker.TrackerIO');
+    io.openFiles$org_opensourcephysics_cabrillo_tracker_TFrame$java_util_List$Runnable(frame, paths, null);
+  }
+  async function openVideo(bytes, name) {
+    app();
+    const previousVideo = panel()?.getVideo$();
+    const start = Date.now();
+    openInTracker(bytes, name, true);
+    // Wait for the video so the shell does not announce success for a file
+    // that never opened; a decode error ends the wait early.
+    while (Date.now() - start < 30000 && mediaErrorAt < start) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      app();
+      const video = panel()?.getVideo$();
+      if (video && video !== previousVideo) return true;
+    }
+    return false;
+  }
+  async function convertVideo(file, name) {
+    if (!window.TrackerVideoConvert) throw new BridgeError('영상 변환 기능을 불러오지 못했습니다. 페이지를 새로고침해 주세요.');
+    notify('tracker-convert', { stage: 'start', ratio: 0 });
+    try {
+      const output = await window.TrackerVideoConvert.toH264(file, progress => notify('tracker-convert', progress));
+      const mp4 = name.replace(/\.[^.]+$/, '') + '.mp4';
+      return { bytes: output.buffer, name: mp4, file: new File([output], mp4, { type: 'video/mp4' }) };
+    } catch (error) {
+      console.error('Video conversion failed:', error);
+      throw new BridgeError(navigator.onLine === false
+        ? '영상 변환 도구를 처음 받을 때 인터넷 연결이 필요합니다. 연결한 뒤 다시 열어 주세요.'
+        : '이 영상을 H.264로 변환하지 못했습니다. 더 짧게 자르거나 카메라 설정에서 「고효율 동영상」을 끄고 다시 촬영해 주세요.');
+    } finally {
+      notify('tracker-convert', { stage: 'end' });
+    }
+  }
   window.TrackerIOS = {
     ready: false,
     initialize() {
@@ -257,6 +351,7 @@
       if (!frame) throw new BridgeError('Tracker main frame is unavailable');
       installVideoDimensions();
       installTouchMarking();
+      installCodecCheck();
       localizeDialogButtons();
       // Archive export temporarily replaces _localFileSaveFunction, so adapt the
       // public save entry point. Preserve all writes to SwingJS's virtual disk.
@@ -463,35 +558,18 @@
     async importFile(file) {
       if (!file || !file.size) throw new BridgeError('비어 있는 파일은 열 수 없습니다.');
       if (file.size > 200 * 1024 * 1024) throw new BridgeError('태블릿 메모리 사용을 줄이려면 200MB 이하의 짧은 영상으로 잘라 주세요.');
-      let bytes;
-      try { bytes = await file.arrayBuffer(); } catch {
-        // Android reports NotReadableError for cloud files that are not downloaded yet.
-        throw new BridgeError('파일을 읽지 못했습니다. Drive 파일이면 기기에 다운로드한 뒤 다시 선택해 주세요.');
+      const name = trackerFileName(file, new Uint8Array(await readBytes(file.slice(0, 16))));
+      if (!VIDEO_EXTENSIONS.has(extension(name))) {
+        openInTracker(await readBytes(file), name, false);
+        return { name, video: false };
       }
-      const name = trackerFileName(file, new Uint8Array(bytes, 0, Math.min(16, bytes.byteLength)));
-      const isVideo = VIDEO_EXTENSIONS.has(extension(name));
-      app(); // The file read crossed an asynchronous boundary.
-      const previousVideo = panel()?.getVideo$();
-      // Use the same virtual file storage as SwingJS's native file chooser.
-      const path = J2S.getGlobal('j2s.tmpdir') + 'OPEN/' + Date.now() + '/' + name;
-      const javaFile = Clazz.new_(Clazz.load('java.io.File').c$$S, [path]);
-      // Wrap the buffer as a Java byte[] instead of J2S._toBytes, which copies
-      // byte by byte; large tablet videos otherwise stall or run out of memory.
-      swingjs.JSUtil.setFileBytesStatic$O$O(javaFile, Clazz.array(new Int8Array(bytes), Clazz.array(Byte.TYPE, 0)));
-      const paths = Clazz.new_(Clazz.load('java.util.ArrayList'));
-      paths.add$O(javaFile.getAbsolutePath$());
-      const io = Clazz.load('org.opensourcephysics.cabrillo.tracker.TrackerIO');
-      io.openFiles$org_opensourcephysics_cabrillo_tracker_TFrame$java_util_List$Runnable(frame, paths, null);
-      if (!isVideo) return { name, video: false };
-      // Tracker reports load errors in its own dialog; wait for the video so
-      // the shell does not announce success for a file that never opened.
-      for (const start = Date.now(); Date.now() - start < 30000;) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        app();
-        const video = panel()?.getVideo$();
-        if (video && video !== previousVideo) return { name, video: true };
+      // Open videos the browser decodes as they are; convert the rest to H.264.
+      if (await browserDecodes(file.slice(0, file.size, 'video/mp4'))) {
+        if (await openVideo(await readBytes(file), name)) return { name, video: true, converted: false };
       }
-      throw new BridgeError('영상을 열지 못했습니다. H.264 MP4로 변환하거나 더 짧게 잘라 다시 열어 주세요.');
+      const converted = await convertVideo(file, name);
+      if (await openVideo(converted.bytes, converted.name)) return { name: converted.name, video: true, converted: true, file: converted.file };
+      throw new BridgeError('영상을 열지 못했습니다. 더 짧게 잘라 다시 열어 주세요.');
     },
     loadExample(name = 'projectile.mp4') {
       if (!['projectile.mp4', 'BallDrop.mp4'].includes(name)) throw new BridgeError('알 수 없는 예제입니다.');

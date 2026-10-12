@@ -65,6 +65,14 @@
   addEventListener('tracker-ready', onReady);
   addEventListener('tracker-media-error', event => status(event.detail, true));
   addEventListener('tracker-tap-error', event => status(event.detail, true));
+  addEventListener('tracker-convert', ({ detail: { stage, ratio } }) => {
+    $('workspace').setAttribute('aria-busy', String(stage !== 'end'));
+    if (stage === 'start' || stage === 'download') {
+      status('이 기기에서 바로 열 수 없는 영상 코덱이라 H.264로 변환합니다. 변환 도구를 불러오는 중… (처음 한 번, 약 30MB)');
+    } else if (stage === 'convert') {
+      status(`영상을 H.264로 변환하는 중… ${Math.round(ratio * 100)}% · 화면을 끄거나 다른 앱으로 전환하지 마세요.`);
+    }
+  });
   addEventListener('tracker-tap-mode', event => showTapBanner(event.detail));
   addEventListener('tracker-calibration', event => {
     calibrationStage = event.detail.stage;
@@ -116,10 +124,13 @@
     status('파일을 읽고 있습니다: ' + file.name);
     try {
       const result = await bridge().importFile(file);
-      window.TrackerFiles.rememberSource(file);
-      status(result.video
-        ? '영상을 열었습니다. ① 길이 보정을 하세요.'
-        : 'Tracker에 파일을 전달했습니다. 영상이 보이면 ① 길이 보정을 하세요.');
+      // Keep the converted copy so it can be downloaded and reused directly.
+      window.TrackerFiles.rememberSource(result.file || file);
+      status(result.converted
+        ? 'H.264로 변환한 영상을 열었습니다. 변환본은 「결과 다운로드」에서 받을 수 있습니다. ① 길이 보정을 하세요.'
+        : result.video
+          ? '영상을 열었습니다. ① 길이 보정을 하세요.'
+          : 'Tracker에 파일을 전달했습니다. 영상이 보이면 ① 길이 보정을 하세요.');
     } catch (error) {
       status(error.message || '파일을 읽지 못했습니다. H.264 MP4로 다시 시도하세요.', true);
     } finally {
