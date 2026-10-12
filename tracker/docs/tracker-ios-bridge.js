@@ -22,6 +22,35 @@
     }
     return markHistory.filter(mark => mark.panel === panel());
   }
+  const VIDEO_EXTENSIONS = new Set(['mp4', 'm4v', 'mov']);
+  const KIND_EXTENSIONS = { video: ['mp4', 'm4v', 'mov'], zip: ['trz', 'zip'], trk: ['trk'], jpg: ['jpg', 'jpeg'], png: ['png'], gif: ['gif'] };
+  const extension = name => (/\.([^.]+)$/.exec(name)?.[1] || '').toLowerCase();
+  function sniffKind(head) {
+    // File content, not the name: Android pickers (Drive, Photo Picker) often
+    // return names without an extension, and Tracker chooses a loader by extension.
+    const text = (from, to) => String.fromCharCode(...head.subarray(from, to));
+    if (['ftyp', 'moov', 'mdat', 'wide', 'free'].includes(text(4, 8))) return { kind: 'video', ext: text(8, 12) === 'qt  ' || text(4, 8) !== 'ftyp' ? 'mov' : 'mp4' };
+    if (text(0, 4) === 'PK\x03\x04') return { kind: 'zip', ext: 'trz' };
+    if (/^(\xEF\xBB\xBF)?<\?xml/.test(text(0, 8))) return { kind: 'trk', ext: 'trk' };
+    if (head[0] === 0xFF && head[1] === 0xD8 && head[2] === 0xFF) return { kind: 'jpg', ext: 'jpg' };
+    if (text(1, 4) === 'PNG') return { kind: 'png', ext: 'png' };
+    if (text(0, 4) === 'GIF8') return { kind: 'gif', ext: 'gif' };
+    return null;
+  }
+  function trackerFileName(file, head) {
+    const original = file.name || '';
+    let ext = /\.([^.]+)$/.exec(original)?.[1] || '';
+    let base = ext ? original.slice(0, -ext.length - 1) : original;
+    const sniffed = sniffKind(head) || (/^video\//.test(file.type) ? { kind: 'video', ext: 'mp4' } : null);
+    if (sniffed && !KIND_EXTENSIONS[sniffed.kind].includes(ext.toLowerCase())) {
+      // An unknown suffix such as "video:1234" belongs to the name, not the type.
+      if (ext && !Object.values(KIND_EXTENSIONS).flat().includes(ext.toLowerCase())) base = original;
+      ext = sniffed.ext;
+    }
+    // Characters that SwingJS paths and Tracker's URI handling misread.
+    base = base.replace(/[\\/:*?"<>|#%!&;=+\x00-\x1f]+/g, '_').trim() || 'tracker-file';
+    return ext ? `${base}.${ext}` : base;
+  }
   const trackerClass = name => Clazz.load('org.opensourcephysics.cabrillo.tracker.' + name);
   function app() {
     window.Tracker._setThread(); // getApp() returns JSDummyApplet in this upstream build.
@@ -434,16 +463,35 @@
     async importFile(file) {
       if (!file || !file.size) throw new BridgeError('비어 있는 파일은 열 수 없습니다.');
       if (file.size > 200 * 1024 * 1024) throw new BridgeError('태블릿 메모리 사용을 줄이려면 200MB 이하의 짧은 영상으로 잘라 주세요.');
-      const bytes = await file.arrayBuffer();
+      let bytes;
+      try { bytes = await file.arrayBuffer(); } catch {
+        // Android reports NotReadableError for cloud files that are not downloaded yet.
+        throw new BridgeError('파일을 읽지 못했습니다. Drive 파일이면 기기에 다운로드한 뒤 다시 선택해 주세요.');
+      }
+      const name = trackerFileName(file, new Uint8Array(bytes, 0, Math.min(16, bytes.byteLength)));
+      const isVideo = VIDEO_EXTENSIONS.has(extension(name));
       app(); // The file read crossed an asynchronous boundary.
+      const previousVideo = panel()?.getVideo$();
       // Use the same virtual file storage as SwingJS's native file chooser.
-      const path = J2S.getGlobal('j2s.tmpdir') + 'OPEN/' + Date.now() + '/' + file.name.replace(/[\\/]/g, '_');
+      const path = J2S.getGlobal('j2s.tmpdir') + 'OPEN/' + Date.now() + '/' + name;
       const javaFile = Clazz.new_(Clazz.load('java.io.File').c$$S, [path]);
-      swingjs.JSUtil.setFileBytesStatic$O$O(javaFile, J2S._toBytes(bytes));
+      // Wrap the buffer as a Java byte[] instead of J2S._toBytes, which copies
+      // byte by byte; large tablet videos otherwise stall or run out of memory.
+      swingjs.JSUtil.setFileBytesStatic$O$O(javaFile, Clazz.array(new Int8Array(bytes), Clazz.array(Byte.TYPE, 0)));
       const paths = Clazz.new_(Clazz.load('java.util.ArrayList'));
       paths.add$O(javaFile.getAbsolutePath$());
       const io = Clazz.load('org.opensourcephysics.cabrillo.tracker.TrackerIO');
       io.openFiles$org_opensourcephysics_cabrillo_tracker_TFrame$java_util_List$Runnable(frame, paths, null);
+      if (!isVideo) return { name, video: false };
+      // Tracker reports load errors in its own dialog; wait for the video so
+      // the shell does not announce success for a file that never opened.
+      for (const start = Date.now(); Date.now() - start < 30000;) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        app();
+        const video = panel()?.getVideo$();
+        if (video && video !== previousVideo) return { name, video: true };
+      }
+      throw new BridgeError('영상을 열지 못했습니다. H.264 MP4로 변환하거나 더 짧게 잘라 다시 열어 주세요.');
     },
     loadExample(name = 'projectile.mp4') {
       if (!['projectile.mp4', 'BallDrop.mp4'].includes(name)) throw new BridgeError('알 수 없는 예제입니다.');

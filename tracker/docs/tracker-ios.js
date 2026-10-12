@@ -88,12 +88,25 @@
   $('close-help').addEventListener('click', () => $('help').close());
   $('open-button').addEventListener('click', () => { if (!importing) $('import-dialog').showModal(); });
   $('close-import').addEventListener('click', () => $('import-dialog').close());
-  $('device-open-button').addEventListener('click', () => { $('import-dialog').close(); $('file-input').click(); });
+  // Android Chrome turns accept into MIME filters: .trk/.trz have no MIME type
+  // there and are greyed out, as are Drive files with generic types. On Android,
+  // the device button asks for media (gallery/camcorder) and the Drive button
+  // accepts any file; the engine identifies the type from the file contents.
+  const android = /Android/i.test(navigator.userAgent);
+  const defaultAccept = $('file-input').accept;
+  if (android) $('drive-open-button').textContent = 'Google Drive·파일에서 선택';
+  function pickFile(accept) {
+    $('import-dialog').close();
+    $('file-input').accept = accept;
+    $('file-input').click();
+  }
+  $('device-open-button').addEventListener('click', () => pickFile(android ? 'video/*,image/*' : defaultAccept));
   $('drive-open-button').addEventListener('click', () => {
     if (importing) return;
-    $('import-dialog').close();
-    status('파일 선택기의 둘러보기 또는 왼쪽 메뉴에서 Google Drive를 선택하세요.');
-    $('file-input').click();
+    status(android
+      ? '파일 선택기 왼쪽 메뉴에서 Drive를 선택하세요. .trk / .trz 프로젝트도 여기서 엽니다.'
+      : '파일 선택기의 둘러보기 또는 왼쪽 메뉴에서 Google Drive를 선택하세요.');
+    pickFile(android ? '' : defaultAccept);
   });
   $('file-input').addEventListener('change', async event => {
     const file = event.target.files[0];
@@ -102,9 +115,11 @@
     $('open-button').disabled = true;
     status('파일을 읽고 있습니다: ' + file.name);
     try {
-      await bridge().importFile(file);
+      const result = await bridge().importFile(file);
       window.TrackerFiles.rememberSource(file);
-      status('Tracker에 파일을 전달했습니다. 영상이 보이면 ① 길이 보정을 하세요.');
+      status(result.video
+        ? '영상을 열었습니다. ① 길이 보정을 하세요.'
+        : 'Tracker에 파일을 전달했습니다. 영상이 보이면 ① 길이 보정을 하세요.');
     } catch (error) {
       status(error.message || '파일을 읽지 못했습니다. H.264 MP4로 다시 시도하세요.', true);
     } finally {
